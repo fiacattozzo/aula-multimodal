@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aula Multimodal — Demo</title>
+
+  <!-- Fuentes -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  
+  <style>
+    :root{
+      /* Paleta azul */
+      --bg:#0a1224; 
+      --surface:#0f1b39; 
+      --text:#eaf1ff; 
+      --muted:#b8c7ff;
+      --brand:#3ba1ff;      /* azul claro */
+      --brand-2:#1e5eff;    /* azul vivo */
+      --ok:#2de3a7; 
+      --focus: 2px solid var(--brand);
+    }
+    :root.high-contrast{
+      --bg:#000; --surface:#000; --text:#fff; --muted:#fff; --brand:#fff; --brand-2:#fff; --ok:#0f0;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; 
+      font-family:"Archivo",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 800px at 10% 10%, #12214a 0%, var(--bg) 60%),
+        linear-gradient(160deg, rgba(30,94,255,.15), transparent 40%),
+        linear-gradient(20deg, rgba(59,161,255,.12), transparent 30%);
+      color:var(--text); 
+      line-height:1.5; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      padding:24px;
+      transition: font-family .2s ease;
+      overscroll-behavior-y: none;
+
+      /* tweaks de render de fuente */
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      font-synthesis-weight: none;
+    }
+
+    .app{
+      width:min(920px,100%); 
+      background:color-mix(in srgb, var(--surface) 75%, black);
+      backdrop-filter: blur(8px); 
+      border:1px solid rgba(255,255,255,.08); 
+      border-radius:20px; 
+      padding:24px;
+      box-shadow:0 8px 40px rgba(0,0,0,.35);
+    }
+    header{ display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:12px; }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .brand .dot{ width:16px; height:16px; border-radius:50%; background:conic-gradient(from 0deg, var(--brand), var(--brand-2)); box-shadow:0 0 20px var(--brand);}
+    h1{ font-size:clamp(20px,2.4vw,28px); margin:0; letter-spacing:.2px; }
+    .toggles{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .toggle{ background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.2); padding:8px 12px; border-radius:999px; cursor:pointer; font-size:14px; }
+    .toggle:focus{ outline:var(--focus) }
+
+    p.lead{ color:var(--muted); margin:4px 0 16px; font-size:clamp(14px,1.8vw,16px); }
+
+    .modes{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:8px 0 16px; }
+    .mode-btn{
+      border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.03);
+      padding:10px 12px; border-radius:12px; cursor:pointer; color:var(--text);
+      font-weight:600; letter-spacing:.2px; transition:border-color .2s, box-shadow .2s, background .2s;
+    }
+    .mode-btn[aria-pressed="true"]{
+      border-color:color-mix(in srgb, var(--brand) 60%, white);
+      background:linear-gradient(180deg, rgba(59,161,255,.12), rgba(30,94,255,.10));
+      box-shadow:0 8px 24px rgba(59,161,255,.15);
+    }
+    .mode-btn:focus{ outline:var(--focus) }
+
+    .panel{ border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:16px; background:rgba(255,255,255,.03); min-height:260px; display:grid; place-items:stretch; }
+    .region{ outline:none; }
+
+    /* VISUAL más grande + responsive */
+    .visual-wrap{ display:grid; grid-template-columns:1.2fr 1fr; gap:12px; align-items:stretch; }
+    .visual-svg{
+      width:100%;
+      min-height:360px;        /* más alto en desktop */
+      aspect-ratio: 16/10;     /* mantiene proporción */
+      background:rgba(255,255,255,.02); border-radius:12px; border:1px dashed rgba(255,255,255,.15);
+      display:grid; place-items:center; padding:8px;
+    }
+    .visual-svg svg{ width:100%; height:100%; }
+    .visual-note{ font-size:14px; color:var(--muted) }
+
+    /* Lector */
+    .text-card{ background:#0e1834; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:14px; }
+    .text-card h3{ margin:.1rem 0 .4rem; font-size:18px }
+    .text-card p{ margin:.3rem 0 }
+
+    /* Auditivo – Player custom */
+    .audio-card{
+      display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      background:#0e1834; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:16px;
+    }
+    .player{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .play{
+      background:var(--brand-2); color:#fff; border:none; padding:10px 14px; border-radius:10px; 
+      cursor:pointer; font-weight:700; min-width:120px;
+    }
+    .play.secondary{ background:transparent; border:1px solid rgba(255,255,255,.25); }
+
+    .time{ font-variant-numeric: tabular-nums; color: var(--muted); min-width: 120px; text-align:center; }
+
+    .timeline{
+      position:relative; width:min(380px, 56vw); height:10px; border-radius:999px;
+      background: rgba(255,255,255,.12); overflow:hidden; border:1px solid rgba(255,255,255,.18);
+      cursor:pointer;
+    }
+    .timeline .bar{
+      position:absolute; left:0; top:0; bottom:0; width:0%;
+      background: linear-gradient(90deg, rgba(59,161,255,.9), rgba(30,94,255,.9));
+    }
+
+    .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .select{
+      background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.25); 
+      padding:8px 10px; border-radius:8px;
+    }
+    .range{
+      -webkit-appearance:none; appearance:none; width:120px; height:8px; border-radius:999px;
+      background: rgba(255,255,255,.18); outline:none; border:1px solid rgba(255,255,255,.2);
+    }
+    .range::-webkit-slider-thumb{
+      -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%;
+      background: var(--brand-2); border:2px solid white; cursor:pointer;
+    }
+    .range::-moz-range-thumb{
+      width:16px; height:16px; border-radius:50%; background: var(--brand-2); border:2px solid white; cursor:pointer;
+    }
+
+    /* Kinestésico (touch-friendly y sin superposiciones) */
+    .drag-area{
+      display:grid; 
+      grid-template-columns: 1fr;           
+      gap:12px; 
+      align-items:start; 
+    }
+    .board{
+      position: relative;
+      height: 220px;                         
+      border-radius:12px; 
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      overflow: hidden;                      
+      touch-action: none;
+    }
+    .tile, .target{
+      position: absolute;                     
+      width: 140px; 
+      height: 140px; 
+      border-radius:12px; 
+      border:2px dashed rgba(255,255,255,.2); 
+      display:grid; 
+      place-items:center; 
+      user-select:none;
+    }
+    .tile{ 
+      background:rgba(59,161,255,.12); 
+      left:16px; top:40px;                   
+      touch-action:none; 
+    }
+    .target{ 
+      background:rgba(30,94,255,.12); 
+      right:16px; top:40px;
+      transition: border-color .15s ease;
+    }
+    .success{ color:var(--ok); font-weight:700 }
+
+    @media (max-width:720px){
+      .board{ height: 260px; }
+      .tile, .target{ width: 130px; height: 130px; }
+    }
+
+    /* 📱 Mobile tweaks */
+    @media (max-width:720px){
+      .visual-wrap{ grid-template-columns:1fr; }
+      .visual-svg{ min-height:420px; aspect-ratio: 4/3; }
+      .modes{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .timeline{ width:100%; }
+      .play{ min-width:auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none!important; transition:none!important}
+    }
+  </style>
+</head>
+<body>
+  <main class="app" role="main">
+    <header>
+      <div class="brand" aria-label="Marca del proyecto">
+        <span class="dot" aria-hidden="true"></span>
+        <h1>Aula Multimodal — Demo</h1>
+      </div>
+      <div class="toggles">
+        <button class="toggle" id="contrastToggle" aria-pressed="false" title="Alternar alto contraste">Alto contraste</button>
+        <!-- Toggle OpenDyslexic eliminado -->
+        <button class="toggle" id="fontBigger" title="Aumentar tamaño de fuente">A+</button>
+        <button class="toggle" id="fontSmaller" title="Disminuir tamaño de fuente">A−</button>
+      </div>
+    </header>
+
+    <p class="lead">Un mismo mensaje, muchas formas de aprenderlo. Elegí cómo querés experimentarlo:</p>
+
+    <nav class="modes" aria-label="Elegí tu modo de aprendizaje">
+      <button class="mode-btn" data-mode="visual" aria-pressed="true">👁️ Visual</button>
+      <button class="mode-btn" data-mode="auditivo" aria-pressed="false">👂 Auditivo</button>
+      <button class="mode-btn" data-mode="lector" aria-pressed="false">📖 Lector/Escritor</button>
+      <button class="mode-btn" data-mode="kinestesico" aria-pressed="false">🤸 Kinestésico</button>
+    </nav>
+
+    <section class="panel">
+      <div id="region" class="region" role="region" aria-live="polite" aria-label="Contenido del modo seleccionado" tabindex="-1"></div>
+    </section>
+
+    <footer><strong>Muchas gracias por participar.</strong></footer>
+  </main>
+
+  <script>
+    const state = { current:'visual' };
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const region = $('#region');
+
+    function render(){
+      region.innerHTML='';
+      region.focus({preventScroll:true});
+      if(state.current==='visual') region.appendChild(renderVisual());
+      if(state.current==='auditivo') region.appendChild(renderAuditivo());
+      if(state.current==='lector') region.appendChild(renderLector());
+      if(state.current==='kinestesico') region.appendChild(renderKinestesico());
+    }
+
+    /* ---------- VISUAL ---------- */
+    function renderVisual(){
+      const wrap=document.createElement('div');
+      wrap.className='visual-wrap';
+      wrap.innerHTML=`
+        <div class="visual-svg" aria-hidden="true">
+          <svg viewBox="0 0 680 280" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa conceptual del mensaje">
+            <g font-family="Archivo, Arial, sans-serif" text-anchor="middle">
+              <circle cx="340" cy="140" r="64" fill="#3ba1ff33" stroke="#3ba1ff"/>
+              <text x="340" y="145" fill="#eaf1ff" font-weight="700">Aprender</text>
+
+              <line x1="340" y1="76"  x2="340" y2="28"  stroke="#3ba1ff" opacity=".7" />
+              <circle cx="340" cy="20"  r="18" fill="#1e5eff55" />
+              <text x="340" y="25"  fill="#eaf1ff" font-size="12">Visual</text>
+
+              <line x1="404" y1="140" x2="492" y2="140" stroke="#3ba1ff" opacity=".7"/>
+              <circle cx="508" cy="140" r="18" fill="#1e5eff55"/>
+              <text x="508" y="145" fill="#eaf1ff" font-size="12">Auditivo</text>
+
+              <line x1="276" y1="140" x2="188" y2="140" stroke="#3ba1ff" opacity=".7"/>
+              <circle cx="172" cy="140" r="18" fill="#1e5eff55"/>
+              <text x="172" y="145" fill="#eaf1ff" font-size="12">Lector</text>
+
+              <line x1="340" y1="204" x2="340" y2="252" stroke="#3ba1ff" opacity=".7"/>
+              <circle cx="340" cy="260" r="18" fill="#1e5eff55"/>
+              <text x="340" y="265" fill="#eaf1ff" font-size="12">Kinestésico</text>
+            </g>
+          </svg>
+        </div>
+        <div class="visual-note">
+          <strong>Visual:</strong> El concepto central <em>“Aprender”</em> se conecta con cuatro modos. La misma idea, formas diferentes de aprender.
+        </div>`;
+      return wrap;
+    }
+
+    /* ---------- AUDITIVO (player custom) ---------- */
+    function formatTime(s){
+      if(Number.isNaN(s) || !isFinite(s)) return '0:00';
+      const m = Math.floor(s/60); 
+      const sec = Math.floor(s%60).toString().padStart(2,'0');
+      return `${m}:${sec}`;
+    }
+
+    function renderAuditivo(){
+      const card=document.createElement('div');
+      card.className='audio-card';
+      card.setAttribute('role','group');
+      card.setAttribute('aria-label','Controles de audio');
+
+      const text=document.createElement('div');
+      text.innerHTML=`<strong>Auditivo:</strong> escuchá el mensaje en formato narración.`;
+
+      // Audio oculto (sin controles nativos)
+      const audio=document.createElement('audio');
+      audio.id='audioPlayer';
+      audio.src='aulamultimodal_regaloqr.mp3';
+      audio.preload='metadata';
+      audio.controls=false;
+      audio.setAttribute('playsinline',''); // ayuda en iOS
+
+      // UI custom
+      const player = document.createElement('div');
+      player.className = 'player';
+
+      const btnPlay = document.createElement('button');
+      btnPlay.className = 'play';
+      btnPlay.type = 'button';
+      btnPlay.textContent = '▶️ Reproducir';
+
+      const btnPause = document.createElement('button');
+      btnPause.className = 'play secondary';
+      btnPause.type = 'button';
+      btnPause.textContent = '⏸️ Pausar';
+
+      const time = document.createElement('div');
+      time.className = 'time';
+      time.textContent = '0:00 / 0:00';
+
+      const timeline = document.createElement('div');
+      timeline.className = 'timeline';
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      timeline.appendChild(bar);
+
+      // Extras: velocidad + volumen
+      const extras = document.createElement('div');
+      extras.className = 'controls';
+
+      const speedLabel = document.createElement('label');
+      speedLabel.setAttribute('for','speedSel');
+      speedLabel.textContent = 'Velocidad: ';
+
+      const speedSel = document.createElement('select');
+      speedSel.id = 'speedSel';
+      speedSel.className = 'select';
+      ['0.75','1.0','1.25','1.5','2.0'].forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = v + '×';
+        if(v==='1.0') opt.selected = true;
+        speedSel.appendChild(opt);
+      });
+
+      const volLabel = document.createElement('label');
+      volLabel.textContent = 'Volumen: ';
+      const vol = document.createElement('input');
+      vol.type = 'range';
+      vol.min = '0'; vol.max = '1'; vol.step = '0.01'; vol.value = '1';
+      vol.className = 'range';
+
+      // Eventos
+      btnPlay.addEventListener('click', ()=> audio.play());
+      btnPause.addEventListener('click', ()=> audio.pause());
+      speedSel.addEventListener('change', ()=> audio.playbackRate = parseFloat(speedSel.value));
+      vol.addEventListener('input', ()=> audio.volume = parseFloat(vol.value));
+
+      // Actualización de tiempo y barra
+      audio.addEventListener('loadedmetadata', ()=>{
+        time.textContent = `0:00 / ${formatTime(audio.duration)}`;
+      });
+      audio.addEventListener('timeupdate', ()=>{
+        time.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+        const pct = (audio.currentTime / audio.duration) * 100;
+        bar.style.width = `${pct||0}%`;
+      });
+
+      // Seek al hacer click/tap en la barra
+      function seekAt(clientX){
+        const rect = timeline.getBoundingClientRect();
+        const ratio = Math.min(Math.max((clientX - rect.left)/rect.width, 0), 1);
+        audio.currentTime = ratio * (audio.duration || 0);
+      }
+      timeline.addEventListener('click', (e)=> seekAt(e.clientX));
+      timeline.addEventListener('pointerdown', (e)=> {
+        seekAt(e.clientX);
+        const move = (ev)=> seekAt(ev.clientX);
+        const up = ()=> { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      });
+
+      // Compose
+      player.appendChild(btnPlay);
+      player.appendChild(btnPause);
+      player.appendChild(time);
+      player.appendChild(timeline);
+
+      extras.appendChild(speedLabel);
+      extras.appendChild(speedSel);
+      extras.appendChild(volLabel);
+      extras.appendChild(vol);
+
+      card.appendChild(text);
+      card.appendChild(audio);
+      card.appendChild(player);
+      card.appendChild(extras);
+      return card;
+    }
+
+    /* ---------- LECTOR ---------- */
+    function renderLector(){
+      const card=document.createElement('article');
+      card.className='text-card';
+      card.setAttribute('aria-label','Texto accesible');
+      card.innerHTML=`
+        <h3>Versión simplificada</h3>
+        <p>Las personas aprendemos de formas distintas: con imágenes, escuchando, leyendo y haciendo.</p>
+        <p>Si adaptamos el mismo contenido a esos modos, más estudiantes pueden comprenderlo. Eso es accesibilidad cognitiva.</p>
+        <p><em>La educación puede ajustarse a la diversidad de cada mente.</em></p>`;
+      return card;
+    }
+
+    /* ---------- KINESTÉSICO (pointer events: mouse + touch) ---------- */
+    function renderKinestesico(){
+      const wrap = document.createElement('div');
+      wrap.className = 'drag-area';
+      wrap.setAttribute('role','application');
+      wrap.setAttribute('aria-label','Actividad kinestésica: arrastrá la pieza al objetivo');
+
+      const board = document.createElement('div');
+      board.className = 'board';
+
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.textContent = 'Arrastrá esto';
+      tile.id = 'tile';
+
+      const target = document.createElement('div');
+      target.className = 'target';
+      target.id = 'target';
+      target.textContent = 'Soltá acá';
+
+      const result = document.createElement('div');
+
+      // Drag con Pointer Events (mouse + touch)
+      let dragging = false;
+      let offset = {x:0,y:0};
+
+      tile.addEventListener('pointerdown', (e)=>{
+        dragging = true;
+        tile.setPointerCapture(e.pointerId);
+        const rect = tile.getBoundingClientRect();
+        offset.x = e.clientX - rect.left;
+        offset.y = e.clientY - rect.top;
+      });
+
+      function isOverlapping(a,b){
+        const ra = a.getBoundingClientRect();
+        const rb = b.getBoundingClientRect();
+        return !(ra.right < rb.left || ra.left > rb.right || ra.bottom < rb.top || ra.top > rb.bottom);
+      }
+
+      tile.addEventListener('pointermove', (e)=>{
+        if(!dragging) return;
+        const br = board.getBoundingClientRect();
+        const x = e.clientX - br.left - offset.x;
+        const y = e.clientY - br.top  - offset.y;
+
+        const maxX = br.width  - tile.offsetWidth;
+        const maxY = br.height - tile.offsetHeight;
+        tile.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+        tile.style.top  = Math.max(0, Math.min(y, maxY)) + 'px';
+
+        // feedback de proximidad
+        target.style.borderColor = isOverlapping(tile, target) ? 'var(--brand)' : 'rgba(255,255,255,.2)';
+      });
+
+      function endDrag(){
+        if(!dragging) return;
+        dragging = false;
+        if(isOverlapping(tile, target)){
+          target.style.borderColor='var(--ok)';
+          target.textContent='¡Hecho!';
+          result.innerHTML = `<p class="success" role="status">✅ Aprendiste haciendo.</p>`;
+        }else{
+          target.style.borderColor='rgba(255,255,255,.2)';
+        }
+      }
+
+      tile.addEventListener('pointerup', endDrag);
+      tile.addEventListener('pointercancel', endDrag);
+      tile.addEventListener('lostpointercapture', ()=> dragging=false);
+
+      board.appendChild(tile);
+      board.appendChild(target);
+      wrap.appendChild(board);
+      wrap.appendChild(result);
+      return wrap;
+    }
+
+    /* ---------- Nav modos ---------- */
+    $$('.mode-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        $$('.mode-btn').forEach(b=>b.setAttribute('aria-pressed','false'));
+        btn.setAttribute('aria-pressed','true');
+        state.current=btn.dataset.mode;
+        render();
+      });
+      btn.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); }
+      });
+    });
+
+    /* ---------- Toggles UI ---------- */
+    $('#contrastToggle').addEventListener('click',e=>{
+      const root=document.documentElement;
+      const on=!root.classList.contains('high-contrast');
+      root.classList.toggle('high-contrast',on);
+      e.currentTarget.setAttribute('aria-pressed',String(on));
+    });
+
+    let htmlFont=16;
+    const setFont=px=>{ htmlFont=Math.max(14,Math.min(22,px)); document.documentElement.style.fontSize=htmlFont+'px'; }
+    $('#fontBigger').addEventListener('click',()=>setFont(htmlFont+1));
+    $('#fontSmaller').addEventListener('click',()=>setFont(htmlFont-1));
+
+    /* ---------- Init ---------- */
+    render();
+  </script>
+</body>
+</html>
