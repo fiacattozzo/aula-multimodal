@@ -143,7 +143,7 @@
       width:16px; height:16px; border-radius:50%; background: var(--brand-2); border:2px solid white; cursor:pointer;
     }
 
-    /* Kinestésico (touch-friendly y sin superposiciones) */
+    /* Kinestésico (touch-friendly y con MÁS SEPARACIÓN) */
     .drag-area{
       display:grid; 
       grid-template-columns: 1fr;           
@@ -152,7 +152,7 @@
     }
     .board{
       position: relative;
-      height: 220px;                         
+      height: 320px;                         /* ↑ más alto para dar aire */
       border-radius:12px; 
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.03);
@@ -171,19 +171,23 @@
     }
     .tile{ 
       background:rgba(59,161,255,.12); 
-      left:16px; top:40px;                   
+      left:16px; 
+      top: calc(70% - 70px);                  /* ↓ pieza más abajo */
       touch-action:none; 
     }
     .target{ 
       background:rgba(30,94,255,.12); 
-      right:16px; top:40px;
+      right:16px; 
+      top: 24px;                              /* ↑ objetivo más arriba */
       transition: border-color .15s ease;
     }
     .success{ color:var(--ok); font-weight:700 }
 
     @media (max-width:720px){
-      .board{ height: 260px; }
+      .board{ height: 360px; }                /* ↑ más alto en mobile */
       .tile, .target{ width: 130px; height: 130px; }
+      .tile{ left:12px; top: calc(72% - 65px); }
+      .target{ right:12px; top: 18px; }
     }
 
     /* 📱 Mobile tweaks */
@@ -193,6 +197,15 @@
       .modes{ grid-template-columns:repeat(2,minmax(0,1fr)); }
       .timeline{ width:100%; }
       .play{ min-width:auto; }
+    }
+
+    /* Fix iOS Safari para el bloque visual */
+    @supports (-webkit-touch-callout: none) {
+      .visual-svg{
+        aspect-ratio: auto;
+        height: clamp(320px, 45vh, 520px);
+      }
+      .visual-svg svg{ width:100%; height:100%; }
     }
 
     @media (prefers-reduced-motion: reduce){
